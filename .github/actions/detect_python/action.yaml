@@ -1,0 +1,15 @@
+name: Detect Python Version
+description: Scans project setup files (.python-version, pyproject.toml, Pipfile) to detect Python version required
+outputs:
+  version:
+    description: "The Python version detected"
+    value: ${{ steps.detect-python.outputs.version }}
+runs:
+  using: "composite"
+  steps:
+    - name: Detect Python
+      id: detect-python
+      shell: bash
+      run: | 
+        result=$($GITHUB_ACTION_PATH/scripts/detect_version.sh)
+        echo "result="$result"" >> "$GITHUB_OUTPUT"

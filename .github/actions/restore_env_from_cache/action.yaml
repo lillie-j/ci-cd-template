@@ -1,0 +1,40 @@
+name: Checkout Repo & Restore Environment
+description: Reproduces a cached environment
+inputs:
+  dependency-manager:
+    description: The package manager used in this project (uv, pipenv, or venv)
+    required: true
+runs:
+  using: composite
+  steps:
+    - name: Validate dependency manager
+      shell: bash
+      run: |
+        "$GITHUB_ACTION_PATH/../common_scripts/check_membership.sh" \
+        "${{ inputs.dependency-manager}}" "uv pipenv venv"
+
+    - name: Cache environment (uv)
+      if: ${{ inputs.dependency-manager == 'uv' }}
+      uses: actions/cache@v3
+      with:
+        path: .venv
+        key: "${{ runner.os }}-${{ hashFiles('uv.lock','requirements-ci.txt') }}"
+
+    - name: Cache environment (pipenv)
+      if: ${{ inputs.dependency-manager == 'pipenv' }}
+      uses: actions/cache@v3
+      with:
+        path: .venv
+        key: "${{ runner.os }}-${{ hashFiles('Pipfile.lock','requirements-ci.txt') }}"
+
+    - name: Cache environment (venv)
+      if: ${{ inputs.dependency-manager == 'venv' }}
+      uses: actions/cache@v3
+      with:
+        path: .venv
+        key: "${{ runner.os }}-${{ hashFiles('requirements.txt','requirements-ci.txt') }}"
+
+
+
+
+

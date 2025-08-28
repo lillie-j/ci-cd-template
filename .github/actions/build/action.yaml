@@ -1,0 +1,139 @@
+name: Docker Build
+description: Builds a Docker Image
+
+inputs:
+  docker-context-path:
+    description: The folder (path written relative to repo root) in which the Dockerfile/build context
+    required: true
+  build-platform:
+    description: Target platform for your docker image (defaults to linux/amd64)
+    required: false
+    default: "linux/amd64"
+  cloud-registry:
+    description: Cloud container registry to push to (azure, aws)
+    required: false
+    default: "none"
+  AWS_ACCESS_KEY_ID:
+    description: AWS Access Key (Hosted in GitHub Secrets)
+    required: false
+  AWS_SECRET_ACCESS_KEY:
+    description: AWS Secret Access Key (Hosted in GitHub Secrets)
+    required: false
+  AWS_REGION:
+    description: AWS Region of Account (Hosted in GitHub Secrets)
+    required: false
+  AZURE_CREDS:
+    description: Azure Service Principal Credentials (JSON Hosted in GitHub Secrets)
+  AZURE_REGISTRY_NAME:
+    description: Name of Azure Container Registry (Hosted in GitHub Secrets)
+    required: false
+
+
+runs:
+  using: composite
+  steps:
+
+  - name: Validate cloud-registry
+    shell: bash
+    run: |
+      "$GITHUB_ACTION_PATH/../common_scripts/check_membership.sh" \
+      "${{ inputs.cloud-registry }}" "aws azure none"
+
+  - name: Validate Docker Context Path
+    shell: bash
+    run: |
+      "$GITHUB_ACTION_PATH/scripts/validate_docker_context.sh" \
+      "${{ inputs.docker-context-path }}"
+
+  - name: Configure AWS credentials
+    if: ${{ inputs.cloud-registry =='aws' }}
+    uses: aws-actions/configure-aws-credentials@v4
+    with:
+      aws-access-key-id: ${{ inputs.AWS_ACCESS_KEY_ID }}
+      aws-secret-access-key: ${{ inputs.AWS_SECRET_ACCESS_KEY }}
+      aws-region: ${{ inputs.AWS_REGION }}
+
+  - name: Login to ECR
+    if: ${{ inputs.cloud-registry == 'aws' }}
+    id: login-ecr
+    uses:  aws-actions/amazon-ecr-login@v2
+
+  - name: Login to Azure
+    uses: azure/login@v2
+    if: ${{ inputs.cloud-registry == 'azure' }}
+    with:
+      creds: ${{ inputs.AZURE_CREDS }}
+
+  - name: Login to ACR
+    if: ${{ inputs.cloud-registry == 'azure' }}
+    shell: bash
+    run: az acr login --name "${{ inputs.AZURE_REGISTRY_NAME }}"
+
+  - name: Set up Docker
+    uses: docker/setup-buildx-action@v2
+
+  - name: Generate Docker Tag
+    id: set_tag
+    shell: bash
+    run: |
+      SHORT_SHA=$(echo "${{ github.sha }}" | cut -c1-7)
+      BUILD_CONTEXT_RELATIVE_FOLDER=$(basename "${{ inputs.docker-context-path }}")
+      REPO_NAME=$(echo "${{ github.repository }}" | cut -d'/' -f2)
+      TAG="${REPO_NAME}:${BUILD_CONTEXT_RELATIVE_FOLDER}-${SHORT_SHA}"
+      FILESYSTEM_FRIENDLY_TAG="${REPO_NAME}-${BUILD_CONTEXT_RELATIVE_FOLDER}-${SHORT_SHA}"
+
+      echo "Generated Tag: $TAG"
+      echo "TAG=$TAG" >> $GITHUB_ENV
+      echo "FILESYSTEM_FRIENDLY_TAG=$FILESYSTEM_FRIENDLY_TAG" >> $GITHUB_ENV
+
+  - name: Build and tag Docker image
+    if: ${{ inputs.cloud-registry == 'none' }}
+    shell: bash
+    run: |
+      docker buildx build \
+        --platform "${{ inputs.build-platform }}" \
+        --tag "${{ env.FILESYSTEM_FRIENDLY_TAG }}" \
+        --file "${{ inputs.docker-context-path }}/Dockerfile" \
+        "${{ inputs.docker-context-path }}" \
+        --load
+
+      docker save "${{ env.FILESYSTEM_FRIENDLY_TAG }}" -o "${{ env.FILESYSTEM_FRIENDLY_TAG }}.tar"
+      gzip "${{ env.FILESYSTEM_FRIENDLY_TAG }}.tar"
+
+  - name: Build and tag Docker image (AWS)
+    if: ${{ inputs.cloud-registry == 'aws' }}
+    shell: bash
+    run: |
+      ECR_REGISTRY="${{ steps.login-ecr.outputs.registry }}"
+  
+      docker buildx build \
+        --platform "${{ inputs.build-platform }}" \
+        --tag "$ECR_REGISTRY/${{ env.TAG }}" \
+        --file "${{ inputs.docker-context-path }}/Dockerfile" \
+        "${{ inputs.docker-context-path }}" \
+        --load
+
+      docker push "$ECR_REGISTRY/${{ env.TAG }}"
+
+  - name: Build and tag Docker image (Azure)
+    if: ${{ inputs.cloud-registry == 'azure' }}
+    shell: bash
+    run: |
+      ACR_REGISTRY="${{ inputs.AZURE_REGISTRY_NAME }}.azurecr.io"
+  
+      docker buildx build \
+        --platform "${{ inputs.build-platform }}" \
+        --tag "$ACR_REGISTRY/${{ env.TAG }}" \
+        --file "${{ inputs.docker-context-path }}/Dockerfile" \
+        "${{ inputs.docker-context-path }}" \
+        --load
+
+      docker push "$ACR_REGISTRY/${{ env.TAG }}"
+
+  - name: Upload Image
+    if: ${{ inputs.cloud-registry == 'none' }}
+    uses: actions/upload-artifact@v4
+    with:
+      name: "${{ env.FILESYSTEM_FRIENDLY_TAG }}"
+      path: "${{ env.FILESYSTEM_FRIENDLY_TAG }}.tar.gz"
+      if-no-files-found: ignore

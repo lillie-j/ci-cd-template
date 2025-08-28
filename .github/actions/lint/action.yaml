@@ -1,0 +1,47 @@
+name: Lint (Flake8 & Pylint)
+description: Lints Python code using Flake8 & PyLint. Outputs a pylint score badge as an artifact.
+inputs:
+  folders-to-exclude:
+    description: Folders in repo to exclude from linting (comma separated, no spaces)
+    required: false
+    default: "tests"
+  ignore-failures:
+    description: Set to 'true' to not fail if linters detect issues, 'false' to fail if linters detect issues.
+    required: false
+    default: "true"
+runs:
+  using: composite
+  steps:
+    - name: Validate ignore-failures
+      shell: bash
+      run: |
+        "$GITHUB_ACTION_PATH/../common_scripts/check_membership.sh" \
+        "${{ inputs.ignore-failures }}" "true false"
+
+    - name: Lint Code (Flake 8)
+      shell: bash
+      run: |
+        "$GITHUB_ACTION_PATH/scripts/lint_with_flake8.sh" \
+        "${{ inputs.ignore-failures }}" "${{ inputs.folders-to-exclude }}"
+    
+    - name: Lint Code (Pylint)
+      shell: bash
+      run: |
+        "$GITHUB_ACTION_PATH/scripts/lint_with_pylint.sh" \
+        "${{ inputs.ignore-failures }}" "${{ inputs.folders-to-exclude }}"
+
+    
+    - name: Get short SHA
+      id: short-sha
+      shell: bash
+      run: |
+        SHORT_SHA=$(echo "${{ github.sha }}" | cut -c1-7)
+        echo "short_sha=$SHORT_SHA" >> $GITHUB_OUTPUT
+
+
+    - name: Upload Pylint Score Badge
+      uses: actions/upload-artifact@v4
+      with:
+        name: "pylint-badge-${{ steps.short-sha.outputs.short_sha }}.svg"
+        path: pylint-badge.svg
+        if-no-files-found: ignore

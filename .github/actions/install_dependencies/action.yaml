@@ -1,0 +1,55 @@
+name: Install Dependencies
+description: Install dependencies using chosen package manager. Supports uv, Pipenv, venv.
+inputs:
+  dependency-manager:
+    description: The package manager used in this project (uv, pipenv, or  venv)
+    required: true
+runs:
+  using: composite
+  steps:
+  - name: Validate dependency manager
+    shell: bash
+    run: |
+      "$GITHUB_ACTION_PATH/../common_scripts/check_membership.sh" \
+      "${{ inputs.dependency-manager}}" "uv pipenv venv"
+
+  - name: Install uv
+    if: ${{ inputs.dependency-manager == 'uv' }}
+    shell: bash
+    run: curl -LS https://astral.sh/uv/install.sh | bash
+
+  - name: Cache environment (uv)
+    if: ${{ inputs.dependency-manager == 'uv' }}
+    uses: actions/cache@v3
+    with:
+      path: .venv
+      key: "${{ runner.os }}-${{ hashFiles('uv.lock','requirements-ci.txt') }}"
+
+  - name: Cache environment (pipenv)
+    if: ${{ inputs.dependency-manager == 'pipenv' }}
+    uses: actions/cache@v3
+    with:
+      path: .venv
+      key: "${{ runner.os }}-${{ hashFiles('Pipfile.lock','requirements-ci.txt') }}"
+
+  - name: Cache environment (venv)
+    if: ${{ inputs.dependency-manager == 'venv' }}
+    uses: actions/cache@v3
+    with:
+      path: .venv
+      key: "${{ runner.os }}-${{ hashFiles('requirements.txt','requirements-ci.txt') }}"
+
+  - name: Install Dependencies (uv)
+    if: ${{ inputs.dependency-manager == 'uv' }}
+    shell: bash
+    run: "$GITHUB_ACTION_PATH/scripts/install_uv_dependencies.sh"
+          
+  - name: Install Dependencies (pipenv)
+    if: ${{ inputs.dependency-manager == 'pipenv' }}
+    shell: bash
+    run: "$GITHUB_ACTION_PATH/scripts/install_pipenv_dependencies.sh"
+
+  - name: Install Dependencies (venv)
+    if: ${{ inputs.dependency-manager == 'venv' }}
+    shell: bash
+    run: "$GITHUB_ACTION_PATH/scripts/install_venv_dependencies.sh"

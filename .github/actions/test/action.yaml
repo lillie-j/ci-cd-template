@@ -1,0 +1,23 @@
+name: Run Tests (Pytest)
+description: Runs all tests in ./tests using the Pytest Framework. Outputs a Coverage Report (HTML) as an artifact.
+runs:
+  using: composite
+  steps:
+  - name: Run Tests
+    shell: bash
+    run: "$GITHUB_ACTION_PATH/scripts/run_tests.sh"
+
+  - name: Get short SHA
+    id: short-sha
+    shell: bash
+    run: |
+      SHORT_SHA=$(echo "${{ github.sha }}" | cut -c1-7)
+      echo "short_sha=$SHORT_SHA" >> $GITHUB_OUTPUT
+
+
+  - name: Upload Test Coverage Report
+    uses: actions/upload-artifact@v4
+    with:
+      name: "coverage_report-${{ steps.short-sha.outputs.short_sha }}"
+      path: htmlcov/
+      if-no-files-found: ignore

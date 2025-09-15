@@ -91,7 +91,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        context: ["./src/backend","./src/frontend"]
+        context: ["./app/backend","./app/frontend"]
 
     steps:
       - name: Checkout repository

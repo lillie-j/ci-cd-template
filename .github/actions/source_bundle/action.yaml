@@ -21,7 +21,8 @@ runs:
         ZIP_FILE_NAME="app-${GITHUB_SHA}.zip" 
         mkdir temp
         cp "${{ inputs.path_to_docker_compose }}" temp/         
-        zip -r ../$ZIP_FILE_NAME temp/*
+        cd temp
+        zip -r ../$ZIP_FILE_NAME .
         echo "zip_file_name=$ZIP_FILE_NAME" >> $GITHUB_OUTPUT
 
     - name: Upload source bundle to S3

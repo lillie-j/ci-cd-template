@@ -2,3 +2,6 @@
 pylint*
 !bandit.yaml
 *.xlsx
+*/.terraform*
+*tfstate*
+*.tfvars

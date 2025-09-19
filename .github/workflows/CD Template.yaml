@@ -1,0 +1,40 @@
+# This workflow is intended for Python projects
+# This workflow deploys dockerized apps to AWS/Azure
+# AWS: Elastic Beanstalk
+# Azure: Azure App Services
+
+name: CD Template Process
+
+on:
+  workflow_dispatch:
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-region: ${{ secrets.AWS_REGION }}
+
+      - name: Upload Source Bundle to S3
+        uses: ./.github/actions/source_bundle
+        id: s3_upload
+        with:
+          path_to_docker_compose: ./app/docker-compose.yml
+          s3_bucket_id: ci-cd-app-bucket
+
+      - name: Upload New App Version to Elastic Beanstalk
+        uses: ./.github/actions/deploy_to_eb
+        with:
+            s3_bucket_id: ci-cd-app-bucket
+            s3_bucket_key: ${{ steps.s3_upload.outputs.source_bundle_s3_key }}
+            application_name: yakobls-cicd-app
+            eb_environment_name: yakobls-cicd-app-env
+
+
+

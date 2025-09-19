@@ -1,0 +1,122 @@
+# This workflow is intended for Python projects
+# This workflow installs Python dependencies, runs tests,
+# lints, and builds Docker images.
+
+name: CI Template Process
+
+on:
+  workflow_call:
+    inputs:
+      cloud_provider:
+        description: "Target cloud provider to push images to"
+        type: string
+
+      dependency_manager:
+        description: "Dependency manager used in your project"
+        type: string
+
+      folders_for_test_coverage:
+        description: "Space delimited list of folders to geneate test coverage reports for | NB: No leading './' required. If empty, tests will run but with no coverage reports. | Example: 'app src'"
+        type: string 
+
+      exclude_folders_from_linting:
+        description:  "Comma separated list of folders to exclude from linting, relative to repo root but no leading './' required & .venv automatically excluded. | Example: 'tests,src'"
+        type: string
+
+      ignore_linting_failures:
+        description: "True - lint issues do not trigger failure; False - lint issues trigger failure"
+        type: string
+
+      build_platform:
+        description: "Architecture to build your image for"
+        type: string
+
+   
+env:
+  AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
+  AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+  AWS_REGION: ${{ secrets.AWS_REGION }}
+
+
+
+jobs:
+  Setup:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Detect Python Version
+        id: python
+        uses: ./.github/actions/detect_python
+        
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: ${{ steps.python.outputs.version }}
+
+      - name: Install Dependencies
+        uses: ./.github/actions/install_dependencies
+        with:
+          dependency-manager: ${{ inputs.dependency_manager }} 
+        
+
+  Test:
+    needs: Setup
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Restore environment
+        uses: ./.github/actions/restore_env_from_cache
+        with:
+          dependency-manager: ${{ inputs.dependency_manager }} 
+
+      - name: Run Tests
+        uses: ./.github/actions/test
+        with:
+          folders_for_test_coverage: ${{ inputs.folders_for_test_coverage }} 
+
+
+  Lint:
+    needs: Setup
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Restore environment
+        uses: ./.github/actions/restore_env_from_cache
+        with:
+          dependency-manager: ${{ inputs.dependency_manager }} 
+      
+      - name: Lint
+        uses: ./.github/actions/lint
+        with:
+          folders-to-exclude: ${{ inputs.exclude_folders_from_linting }} 
+          ignore-failures: ${{ inputs.ignore_linting_failures }} 
+
+       
+  Docker_Build:
+    needs: Test
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        context: ["./app/backend","./app/frontend"] #Cannot be parameterised. Need to be manually overwritten...
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Build Image
+        uses: ./.github/actions/build
+        with:
+          docker-context-path: ${{ matrix.context }}
+          cloud-registry: ${{ inputs.cloud_provider }}
+          build-platform: ${{ inputs.build_platform }}
+          AWS_ACCESS_KEY_ID: ${{ env.AWS_ACCESS_KEY_ID }}
+          AWS_SECRET_ACCESS_KEY: ${{ env.AWS_SECRET_ACCESS_KEY }}
+          AWS_REGION: ${{ env.AWS_REGION }}
+

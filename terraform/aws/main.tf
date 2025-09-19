@@ -1,9 +1,15 @@
-# Create IAM role, assign ECR read policy to role, and create instance profile and assign role
+# IAM Role required for Elastic Beanstalk App to pull to/from ECR
 module "eb_iam_role" {
     source = "./modules/iam"
-    iam_role_name = var.iam_role_name
+    iam_role_name = var.eb_iam_role_name
 }
 
+# ECR Repo required to store images in
+module "ecr_repo" {
+  source = "./modules/ecr"
+}
+
+# Deploy app via Elastic Beanstalk
 module "eb_app" {
     source = "./modules/elastic_beanstalk"
     eb_app_name = var.eb_app_name
@@ -14,6 +20,7 @@ module "eb_app" {
     app_zip_file_key = module.s3_bucket.app_zip_file_id
 }
 
+# S3 Bucket to store source bundle in (docker-compose.yml must be zipped and stored in S3 for EB to work)
 module "s3_bucket" {
     source = "./modules/s3"  
 }

@@ -1,0 +1,31 @@
+name: Deploy 
+
+on:
+  workflow_dispatch:
+    inputs:
+      provider:
+        type: choice
+        options: [aws, azure]
+
+jobs:
+  dispatch:
+    runs-on: ubuntu-latest
+    outputs:
+      workflow-path: ${{ steps.set-workflow.outputs.workflow-path }}
+    steps:
+      - name: Dispatch to cloud specific workflow
+        id: set-workflow
+        run: |
+          if [[ "${{ github.event.inputs.cloud }}" == "aws" ]]; then
+            echo "workflow-path=cd_aws.yml" >> $GITHUB_OUTPUT
+          elif [[ "${{ github.event.inputs.cloud }}" == "azure" ]]; then
+            echo "workflow-path=cd_azure.yml" >> $GITHUB_OUTPUT
+          else
+            echo "Unknown cloud: ${{ github.event.inputs.cloud }}"
+            exit 1
+          fi
+
+  deploy:
+    needs: set-workflow
+    uses: ./.github/workflows/${{ needs.set-workflow.outputs.workflow-path }}
+    secrets  

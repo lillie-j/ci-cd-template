@@ -1,0 +1,36 @@
+name: Source Bundle
+description: Converts a docker-compose.yml into a source bundle (zip file) for deployment to Elastic Beanstalk
+inputs:
+  path_to_docker_compose:
+    description: Path to docker-compose.yml (relative to root) e.g. ./app/docker-compose.yml
+    required: true
+  s3_bucket_id:
+    description: S3 Bucket ID where source bundle to be uploaded
+    required: true
+outputs:
+  source_bundle_s3_key:
+    description: "Relative S3 Key where source bundle zip folder is stored"
+    value: ${{ steps.zip-docker.outputs.zip_file_name }}
+runs:
+  using: "composite"
+  steps:
+    - name: Zip docker-compose.yml
+      id: zip-docker
+      shell: bash
+      run: |
+        ZIP_FILE_NAME="app-${GITHUB_SHA}.zip" 
+        mkdir temp
+        cp "${{ inputs.path_to_docker_compose }}" temp/         
+        cd temp
+        zip -r ../$ZIP_FILE_NAME .
+        echo "zip_file_name=$ZIP_FILE_NAME" >> $GITHUB_OUTPUT
+
+    - name: Upload source bundle to S3
+      id: s3_upload
+      shell: bash
+      run: |
+        S3_KEY="s3://${{ inputs.s3_bucket_id }}/${{ steps.zip-docker.outputs.zip_file_name }}"
+        aws s3 cp "${{ steps.zip-docker.outputs.zip_file_name }}" "$S3_KEY"
+
+
+

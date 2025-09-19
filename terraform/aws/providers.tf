@@ -7,6 +7,7 @@ terraform {
     }
 }
 
+# Creds pulled from AWS/AZ CLI, no need to configure here
 provider "aws" {
-    region = "eu-west-2"
+    region = var.aws_region
 }

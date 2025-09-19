@@ -1,11 +1,16 @@
 name: Run Tests (Pytest)
 description: Runs all tests in ./tests using the Pytest Framework. Outputs a Coverage Report (HTML) as an artifact.
+inputs:
+  folders_for_test_coverage:
+    description: Space delimited list of folders, relative to root but no leading './' to test and generate coverage reports for. 
+    type: string 
+
 runs:
   using: composite
   steps:
   - name: Run Tests
     shell: bash
-    run: "$GITHUB_ACTION_PATH/scripts/run_tests.sh"
+    run: "$GITHUB_ACTION_PATH/scripts/run_tests.sh ${{ inputs.folders_for_test_coverage }}"
 
   - name: Get short SHA
     id: short-sha

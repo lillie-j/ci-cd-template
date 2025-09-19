@@ -1,0 +1,78 @@
+name: Continuous Integration
+
+on:
+  workflow_dispatch:
+    inputs:
+      cloud_provider:
+        description: "Target cloud provider to push images to"
+        required: true
+        type: choice
+        options: [aws, azure]
+
+      dependency_manager:
+        description: "Dependency manager used in your project"
+        required: true
+        type: choice
+        options: [uv, pipenv, venv]
+
+      folders_for_test_coverage:
+        description: "Space delimited list of folders to geneate test coverage reports for | NB: No leading './' required. If empty, tests will run but with no coverage reports. | Example: 'app src'"
+        type: string 
+        required: false
+
+      exclude_folders_from_linting:
+        description: "Comma separated list of folders to exclude from linting, relative to repo root | NB: No leading './' required & .venv automatically excluded | Example: 'tests,src'"
+        required: false
+        type: string
+        default: tests
+
+      ignore_linting_failures:
+        description: "True - lint issues do not trigger failure; False - lint issues trigger failure"
+        required: false
+        type: boolean
+        default: true
+
+      build_platform:
+        description: "Architecture to build your image for"
+        required: true
+        type: choice
+        options: [linux/amd64, linux/arm64]
+        default: linux/amd64
+
+
+jobs:
+  dispatch:
+    runs-on: ubuntu-latest
+    outputs:
+      workflow-path: ${{ steps.set-workflow.outputs.workflow-path }}
+    steps:
+      - name: Dispatch to cloud specific workflow
+        id: set-workflow
+        run: |
+          if [[ "${{ github.event.inputs.cloud_provider }}" == "aws" ]]; then
+            echo "workflow-path=ci_aws.yml" >> $GITHUB_OUTPUT
+          elif [[ "${{ github.event.inputs.cloud_provider }}" == "azure" ]]; then
+            echo "workflow-path=ci_azure.yml" >> $GITHUB_OUTPUT
+          fi
+#workflow_dispatch is a user-triggered event. Inputs from user-triggered events are stored in the github.event.inputs context
+
+
+  ci_aws:
+    needs: dispatch
+    if: ${{ inputs.cloud_provider == 'aws' }}
+    uses: ./.github/workflows/ci_aws.yaml #Needs to be set from the needs. context otherwise will try to resolve at runtime and fail
+    secrets: inherit
+    with:
+      cloud_provider: ${{ github.event.inputs.cloud_provider }}
+      dependency_manager: ${{ github.event.inputs.dependency_manager }}
+      folders_for_test_coverage: ${{ github.event.inputs.folders_for_test_coverage }}
+      exclude_folders_from_linting: ${{ github.event.inputs.exclude_folders_from_linting }}
+      ignore_linting_failures: ${{ github.event.inputs.ignore_linting_failures }}
+      build_platform: ${{ github.event.inputs.build_platform }}
+
+
+
+
+
+
+     

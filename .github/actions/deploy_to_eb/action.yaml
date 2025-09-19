@@ -1,0 +1,34 @@
+name: Deploy to Elastic Beanstalk
+description: Updates an Elastic Beanstalk App from a S3 Source bundle & Deployes New App Version in Env
+inputs:
+  s3_bucket_id:
+    description: S3 Bucket ID where source bundle is located
+    required: true
+  s3_bucket_key:
+    description: S3 Bucket Key where source bundle is located
+    required: true
+  application_name:
+    description: Name of application in Elastic Beanstalk
+    required: true
+  eb_environment_name:
+    description: Name of application environment in Elastic Beanstalk
+    required: true
+
+runs:
+  using: "composite"
+  steps:
+    - name: Create New App Version
+      shell: bash
+      run: |
+          aws elasticbeanstalk create-application-version \
+          --application-name ${{ inputs.application_name }} \
+          --version-label v-${{ github.sha }} \
+          --source-bundle S3Bucket=${{ inputs.s3_bucket_id }},S3Key=${{ inputs.s3_bucket_key }}
+
+    - name: Update EB Environment with new app version
+      shell: bash
+      run: |
+        aws elasticbeanstalk update-environment \
+        --environment-name ${{ inputs.eb_environment_name }} \
+        --version-label v-${{ github.sha }}
+        

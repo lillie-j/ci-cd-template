@@ -1,11 +1,40 @@
-name: Deploy 
+# Cloud Agnostic Dispatcher job which chooses the correct CD workflow to call (AWS or Azure)
+name: CD Dispatcher
 
 on:
   workflow_dispatch:
     inputs:
-      provider:
+      cloud_provider:
+        description: "Target cloud provider to deploy to"
+        required: true
         type: choice
         options: [aws, azure]
+
+      docker_compose_path:
+        description: "AWS ONLY: Path to docker-compose.yml file (needed for AWS multi-container deployments)"
+        required: False
+        type: string
+        default: ./app/docker-compose.yml
+
+      s3_bucket_id:
+        description: "AWS ONLY: S3 Bucket ID to store source bundle in"
+        required: false
+        type: string
+        default: ci-cd-app-bucket
+
+      elastic_beanstalk_app_name:
+        description: "AWS ONLY: Name of Elastic Beanstalk App"
+        required: false
+        type: string
+        default: cicd-test-app1
+
+      elastic_beanstalk_environment_name:
+        description: "AWS ONLY: Name of Elastic Beanstalk Environment"
+        required: false
+        type: string
+        default: cicd-test-app-env1
+
+      
 
 jobs:
   dispatch:
@@ -16,16 +45,22 @@ jobs:
       - name: Dispatch to cloud specific workflow
         id: set-workflow
         run: |
-          if [[ "${{ github.event.inputs.cloud }}" == "aws" ]]; then
+          if [[ "${{ github.event.inputs.cloud_provider }}" == "aws" ]]; then
             echo "workflow-path=cd_aws.yml" >> $GITHUB_OUTPUT
-          elif [[ "${{ github.event.inputs.cloud }}" == "azure" ]]; then
+          elif [[ "${{ github.event.inputs.cloud_provider }}" == "azure" ]]; then
             echo "workflow-path=cd_azure.yml" >> $GITHUB_OUTPUT
           else
-            echo "Unknown cloud: ${{ github.event.inputs.cloud }}"
+            echo "Unknown cloud: ${{ github.event.inputs.cloud_pvodier }}"
             exit 1
           fi
 
-  deploy:
-    needs: set-workflow
-    uses: ./.github/workflows/${{ needs.set-workflow.outputs.workflow-path }}
-    secrets  
+  cd_aws:
+    needs: dispatch
+    if: ${{ inputs.cloud_provider == 'aws' }}
+    uses: ./.github/workflows/cd_aws.yaml
+    secrets: inherit
+    with:
+      docker_compose_path: ${{ github.event.inputs.docker_compose_path }}
+      s3_bucket_id: ${{ github.event.inputs.s3_bucket_id }}
+      elastic_beanstalk_app_name: ${{ github.event.inputs.elastic_beanstalk_app_name }}
+      elastic_beanstalk_app_environment: ${{ github.event.inputs.elastic_beanstalk_app_environment }}

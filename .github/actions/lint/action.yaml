@@ -12,12 +12,6 @@ inputs:
 runs:
   using: composite
   steps:
-    - name: Validate ignore-failures
-      shell: bash
-      run: |
-        "$GITHUB_ACTION_PATH/../common_scripts/check_membership.sh" \
-        "${{ inputs.ignore-failures }}" "true false"
-
     - name: Lint Code (Flake 8)
       shell: bash
       run: |
@@ -29,7 +23,6 @@ runs:
       run: |
         "$GITHUB_ACTION_PATH/scripts/lint_with_pylint.sh" \
         "${{ inputs.ignore-failures }}" "${{ inputs.folders-to-exclude }}"
-
     
     - name: Get short SHA
       id: short-sha
@@ -37,7 +30,6 @@ runs:
       run: |
         SHORT_SHA=$(echo "${{ github.sha }}" | cut -c1-7)
         echo "short_sha=$SHORT_SHA" >> $GITHUB_OUTPUT
-
 
     - name: Upload Pylint Score Badge
       uses: actions/upload-artifact@v4

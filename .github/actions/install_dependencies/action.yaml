@@ -7,12 +7,7 @@ inputs:
 runs:
   using: composite
   steps:
-  - name: Validate dependency manager
-    shell: bash
-    run: |
-      "$GITHUB_ACTION_PATH/../common_scripts/check_membership.sh" \
-      "${{ inputs.dependency-manager}}" "uv pipenv venv"
-
+# UV Project Steps
   - name: Install uv
     if: ${{ inputs.dependency-manager == 'uv' }}
     shell: bash
@@ -25,6 +20,12 @@ runs:
       path: .venv
       key: "${{ runner.os }}-${{ hashFiles('uv.lock','requirements-ci.txt') }}"
 
+  - name: Install Dependencies (uv)
+    if: ${{ inputs.dependency-manager == 'uv' }}
+    shell: bash
+    run: "$GITHUB_ACTION_PATH/scripts/install_uv_dependencies.sh"
+
+# Pipenv Project Steps
   - name: Cache environment (pipenv)
     if: ${{ inputs.dependency-manager == 'pipenv' }}
     uses: actions/cache@v3
@@ -32,22 +33,18 @@ runs:
       path: .venv
       key: "${{ runner.os }}-${{ hashFiles('Pipfile.lock','requirements-ci.txt') }}"
 
+  - name: Install Dependencies (pipenv)
+    if: ${{ inputs.dependency-manager == 'pipenv' }}
+    shell: bash
+    run: "$GITHUB_ACTION_PATH/scripts/install_pipenv_dependencies.sh"
+
+# Venv Project Steps
   - name: Cache environment (venv)
     if: ${{ inputs.dependency-manager == 'venv' }}
     uses: actions/cache@v3
     with:
       path: .venv
       key: "${{ runner.os }}-${{ hashFiles('requirements.txt','requirements-ci.txt') }}"
-
-  - name: Install Dependencies (uv)
-    if: ${{ inputs.dependency-manager == 'uv' }}
-    shell: bash
-    run: "$GITHUB_ACTION_PATH/scripts/install_uv_dependencies.sh"
-          
-  - name: Install Dependencies (pipenv)
-    if: ${{ inputs.dependency-manager == 'pipenv' }}
-    shell: bash
-    run: "$GITHUB_ACTION_PATH/scripts/install_pipenv_dependencies.sh"
 
   - name: Install Dependencies (venv)
     if: ${{ inputs.dependency-manager == 'venv' }}

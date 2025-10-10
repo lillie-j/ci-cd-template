@@ -1,4 +1,5 @@
-name: Continuous Integration
+# Cloud Agnostic Dispatcher job which chooses the correct CI workflow to call (AWS or Azure)
+name: CI Dispatcher
 
 on:
   workflow_dispatch:
@@ -60,7 +61,7 @@ jobs:
   ci_aws:
     needs: dispatch
     if: ${{ inputs.cloud_provider == 'aws' }}
-    uses: ./.github/workflows/ci_aws.yaml #Needs to be set from the needs. context otherwise will try to resolve at runtime and fail
+    uses: ./.github/workflows/ci_aws.yaml
     secrets: inherit
     with:
       cloud_provider: ${{ github.event.inputs.cloud_provider }}

@@ -1,6 +1,6 @@
 #!/bin/bash
-# Exit immediately if command fails, undefined variables = fail, cause entire pipeline to fail
-set -euo pipefail
+# Usage: run_tests.sh <space delimited list of folders to generate tests for (no leading ./ required)>
+# Example: run_tests.sh "true" "src app"
 
 COV_ARGS=()
 for dir in "$@"; do

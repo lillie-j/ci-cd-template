@@ -8,7 +8,7 @@ resource "aws_iam_role" "eb_service_role" {
             {
                 Effect = "Allow"
                 Principal = {
-                    Service = "ec2.amazonaws.com"
+                    Service = "ec2.amazonaws.com", 
                 }
                 Action = "sts:AssumeRole"
             }
@@ -20,6 +20,11 @@ resource "aws_iam_role" "eb_service_role" {
 resource "aws_iam_role_policy_attachment" "eb_instance_ecr_read" {
     role = aws_iam_role.eb_service_role.name
     policy_arn = "arn:aws:iam::aws:policy/AmazonEC2ContainerRegistryReadOnly"
+}
+
+resource "aws_iam_role_policy_attachment" "eb_instance_ecr_public_read" {
+    role = aws_iam_role.eb_service_role.name
+    policy_arn = "arn:aws:iam::aws:policy/AmazonElasticContainerRegistryPublicReadOnly"
 }
 
 # Create instace profile for use by EB EC2 instances

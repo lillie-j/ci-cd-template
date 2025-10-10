@@ -1,0 +1,57 @@
+# This workflow:
+# 1. Uploads a Source Bundle (zipped .docker-compose.yml) to S3
+# 2. Deploys app to Elastic Beanstalk (assumes already created & bootstrapped)
+name: CD AWS
+
+on:
+  workflow_call:
+    inputs:
+      docker_compose_path:
+        description: "Path to docker-compose.yml file | Example: './app/docker-compose.yml'"
+        type: string
+      s3_bucket_id:
+        description: "ID of S3 Bucket to upload source bundle to"
+        type: string
+      elastic_beanstalk_app_name:
+        description: "Name of Elastic Beanstalk App"
+        type: string
+      elastic_beanstalk_app_environment:
+        description: "Name of Elastic Beanstalk Environment"
+        type: string
+
+env:
+  AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
+  AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+  AWS_REGION: ${{ secrets.AWS_REGION }}
+
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          aws-access-key-id: ${{ env.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ env.AWS_SECRET_ACCESS_KEY }}
+          aws-region: ${{ env.AWS_REGION }}
+
+      - name: Upload Source Bundle to S3
+        uses: ./.github/actions/source_bundle
+        id: s3_upload
+        with:
+          path_to_docker_compose: ${{ inputs.docker_compose_path }}
+          s3_bucket_id: ${{ inputs.s3_bucket_id }}
+
+      - name: Upload New App Version to Elastic Beanstalk
+        uses: ./.github/actions/deploy_to_eb
+        with:
+            s3_bucket_id: ${{ inputs.s3_bucket_id }}
+            s3_bucket_key: ${{ steps.s3_upload.outputs.source_bundle_s3_key }}
+            application_name: ${{ inputs.elastic_beanstalk_app_name }}
+            eb_environment_name: ${{ inputs.elastic_beanstalk_environment_name }}
+
+
+

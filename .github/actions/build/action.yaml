@@ -32,42 +32,12 @@ inputs:
 runs:
   using: composite
   steps:
-
-  - name: Validate cloud-registry
-    shell: bash
-    run: |
-      "$GITHUB_ACTION_PATH/../common_scripts/check_membership.sh" \
-      "${{ inputs.cloud-registry }}" "aws azure none"
-
+# Cloud Agnostic (Docker Setup & Tag Generation)
   - name: Validate Docker Context Path
     shell: bash
     run: |
       "$GITHUB_ACTION_PATH/scripts/validate_docker_context.sh" \
       "${{ inputs.docker-context-path }}"
-
-  - name: Configure AWS credentials
-    if: ${{ inputs.cloud-registry =='aws' }}
-    uses: aws-actions/configure-aws-credentials@v4
-    with:
-      aws-access-key-id: ${{ inputs.AWS_ACCESS_KEY_ID }}
-      aws-secret-access-key: ${{ inputs.AWS_SECRET_ACCESS_KEY }}
-      aws-region: ${{ inputs.AWS_REGION }}
-
-  - name: Login to ECR
-    if: ${{ inputs.cloud-registry == 'aws' }}
-    id: login-ecr
-    uses:  aws-actions/amazon-ecr-login@v2
-
-  - name: Login to Azure
-    uses: azure/login@v2
-    if: ${{ inputs.cloud-registry == 'azure' }}
-    with:
-      creds: ${{ inputs.AZURE_CREDS }}
-
-  - name: Login to ACR
-    if: ${{ inputs.cloud-registry == 'azure' }}
-    shell: bash
-    run: az acr login --name "${{ inputs.AZURE_REGISTRY_NAME }}"
 
   - name: Set up Docker
     uses: docker/setup-buildx-action@v2
@@ -86,19 +56,19 @@ runs:
       echo "TAG=$TAG" >> $GITHUB_ENV
       echo "FILESYSTEM_FRIENDLY_TAG=$FILESYSTEM_FRIENDLY_TAG" >> $GITHUB_ENV
 
-  - name: Build and tag Docker image
-    if: ${{ inputs.cloud-registry == 'none' }}
-    shell: bash
-    run: |
-      docker buildx build \
-        --platform "${{ inputs.build-platform }}" \
-        --tag "${{ env.FILESYSTEM_FRIENDLY_TAG }}" \
-        --file "${{ inputs.docker-context-path }}/Dockerfile" \
-        "${{ inputs.docker-context-path }}" \
-        --load
+# AWS Build & Push  
+  - name: Configure AWS credentials
+    if: ${{ inputs.cloud-registry =='aws' }}
+    uses: aws-actions/configure-aws-credentials@v4
+    with:
+      aws-access-key-id: ${{ inputs.AWS_ACCESS_KEY_ID }}
+      aws-secret-access-key: ${{ inputs.AWS_SECRET_ACCESS_KEY }}
+      aws-region: ${{ inputs.AWS_REGION }}
 
-      docker save "${{ env.FILESYSTEM_FRIENDLY_TAG }}" -o "${{ env.FILESYSTEM_FRIENDLY_TAG }}.tar"
-      gzip "${{ env.FILESYSTEM_FRIENDLY_TAG }}.tar"
+  - name: Login to ECR
+    if: ${{ inputs.cloud-registry == 'aws' }}
+    id: login-ecr
+    uses:  aws-actions/amazon-ecr-login@v2
 
   - name: Build and tag Docker image (AWS)
     if: ${{ inputs.cloud-registry == 'aws' }}
@@ -115,6 +85,18 @@ runs:
 
       docker push "$ECR_REGISTRY/${{ env.TAG }}"
 
+# Azure Build and Push
+  - name: Login to Azure
+    uses: azure/login@v2
+    if: ${{ inputs.cloud-registry == 'azure' }}
+    with:
+      creds: ${{ inputs.AZURE_CREDS }}
+
+  - name: Login to ACR
+    if: ${{ inputs.cloud-registry == 'azure' }}
+    shell: bash
+    run: az acr login --name "${{ inputs.AZURE_REGISTRY_NAME }}"
+
   - name: Build and tag Docker image (Azure)
     if: ${{ inputs.cloud-registry == 'azure' }}
     shell: bash
@@ -129,6 +111,21 @@ runs:
         --load
 
       docker push "$ACR_REGISTRY/${{ env.TAG }}"
+
+# Build and Push to GitHub Artifacts as .tar.gz
+  - name: Build and tag Docker image
+    if: ${{ inputs.cloud-registry == 'none' }}
+    shell: bash
+    run: |
+      docker buildx build \
+        --platform "${{ inputs.build-platform }}" \
+        --tag "${{ env.FILESYSTEM_FRIENDLY_TAG }}" \
+        --file "${{ inputs.docker-context-path }}/Dockerfile" \
+        "${{ inputs.docker-context-path }}" \
+        --load
+
+      docker save "${{ env.FILESYSTEM_FRIENDLY_TAG }}" -o "${{ env.FILESYSTEM_FRIENDLY_TAG }}.tar"
+      gzip "${{ env.FILESYSTEM_FRIENDLY_TAG }}.tar"
 
   - name: Upload Image
     if: ${{ inputs.cloud-registry == 'none' }}

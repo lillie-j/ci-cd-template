@@ -19,7 +19,6 @@ runs:
       SHORT_SHA=$(echo "${{ github.sha }}" | cut -c1-7)
       echo "short_sha=$SHORT_SHA" >> $GITHUB_OUTPUT
 
-
   - name: Upload Test Coverage Report
     uses: actions/upload-artifact@v4
     with:

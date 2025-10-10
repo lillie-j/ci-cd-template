@@ -2,9 +2,10 @@
 # 1. Installs Python dependencies using your chosen package manager
 # 2. Runs tests (pytest) & generates an optional coverage report
 # 3. Lint using pylint and flake8 & generates a pylint score badge
-# 4. Builds a Docker image/images and pushes to AWS ECR
+# 4. Builds a Docker image/images and pushes to Azure ACR
 
-name: CI AWS
+name: CI Azure
+
 on:
   workflow_call:
     inputs:
@@ -34,10 +35,8 @@ on:
 
    
 env:
-  AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
-  AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
-  AWS_REGION: ${{ secrets.AWS_REGION }}
-
+  AZURE_REGISTRY_NAME: ${{ secrets.AZURE_REGISTRY_NAME }}   
+  AZURE_CREDS: ${{ secrets.AZURE_CREDS }}
 
 
 jobs:
@@ -117,7 +116,6 @@ jobs:
           docker-context-path: ${{ matrix.context }}
           cloud-registry: ${{ inputs.cloud_provider }}
           build-platform: ${{ inputs.build_platform }}
-          AWS_ACCESS_KEY_ID: ${{ env.AWS_ACCESS_KEY_ID }}
-          AWS_SECRET_ACCESS_KEY: ${{ env.AWS_SECRET_ACCESS_KEY }}
-          AWS_REGION: ${{ env.AWS_REGION }}
+          AZURE_REGISTRY_NAME: ${{ env.AZURE_REGISTRY_NAME }}
+          AZURE_CREDS: ${{ env.AZURE_CREDS }}
 

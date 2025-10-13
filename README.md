@@ -57,6 +57,10 @@ These are logically separated steps performed by the CI workflow.
 
 
 ### How to Use 🧑‍💻
+#### Prerequisites
+- [ ] **Repos Created in Cloud Image Registry**: The workflow will attempt to push images to an image registry repo which follows the following naming convention: `<GITHUB REPO>-<BUILD CONTEXT BASENAME>`. for example, if your GitHub repository is named `ci-cd-template` and you have an image/build context in `./app/backend`, the workflow will attempt to push an image to a container repository named `ci-cd-template-backend` in your cloud provider's registry. This will have 2 tags: 1 tagged with the short commit SHA, 1 tagged with 'latest'
+
+- [ ] **GitHub Actions IAM Service Principal Permissions**: This must have permissions to interact with your image registry
 
 #### 1. Clone Repo
 The following folders need to be copied into your repo to make this workflow available
@@ -72,7 +76,7 @@ cp ci-cd-template/requirements.ci.txt <path/to/your/repo>
 
 #### 2. Set Secrets
 
-To push Docker images to a cloud registry, define the following secrets in your GitHub repository using **GitHub Secrets**. Access to cloud registry is expected via a service principal.
+To push Docker images to a cloud registry, define the following secrets in your GitHub repository using **GitHub Secrets**. For simplicity, access to cloud resources is expected via a service principal rather than OIDC federation.
 
 
 | Cloud Provider   | Image Registry     | Secret Names                |
@@ -80,12 +84,8 @@ To push Docker images to a cloud registry, define the following secrets in your 
 | **AWS**  | Elastic Container Registry | AWS_ACCESS_KEY_ID, AWS_SECRET_ACCESS_KEY,AWS_REGION                  
 | **Azure** | Azure Container Registry | AZURE_CREDS, AZURE_REGISTRY_NAME 
 
-#### 3. Create Repos in Cloud Image Registries
-When using this workflow to build and push Docker images to a cloud-based image registry (e.g., AWS ECR or Azure ACR), it's important to ensure that the repository name in your cloud registry matches the name of your GitHub repository.
 
-For example, if your GitHub repository is named `ci-cd-template`, the workflow will attempt to push images to a container repository named `ci-cd-template` in your cloud provider's registry.
-
-#### 4. Set Matrix Variables
+#### 3. Set Matrix Variables
 Matrix builds allow parallel execution of jobs with different inputs, improving efficiency. In this workflow, the Docker Build job uses a matrix strategy to build multiple images concurrently.
 
 Each matrix entry defines a build context, which is the directory used as the root for the Docker build. The Dockerfile for each image must reside within its corresponding build context.
@@ -108,7 +108,7 @@ Dynamic inputs cannot be injected into matrix variables. Therefore, all matrix v
         # Each Dockerfile is assumed to be in the same folder as its build context.
 ```
 
-#### 5. Workflow Dispatch
+#### 4. Workflow Dispatch
 The CI Build workflow should be triggered via a workflow dispatch (manual trigger) in GitHub Actions.
 
 ![WorkflowDispatch](docs/ci-build-workflow-dispatch.png)
@@ -176,29 +176,31 @@ Although images can be deployed in a number of ways (e.g. container services lik
 
 This assumes that you have already followed steps 1 & 2 in the 'How to Use' section for CI Workflows.
 
+#### AWS Prerequisites
+- [ ] **Elastic Beanstalk Envioronment Created**: App needs to be deployed in an Elastic Beanstalk environment.
+- [ ] **Elastic Beanstalk App Created**: Deployment will update version of an Elastic Beanstalk App which already exists & redeploy.
+- [ ] **Ensure docker-compose.yml points to correct images** Update docker compose.yml to point to correct images. For simplicity, the CI workflow will always push an image with a `:latest` tag.
+- [ ] **S3 Bucket for Source Bundle Created**: App must be deployed from a source bundle (zipped `docker-compose.yml`) stored in a S3 bucket
+- [ ] **IAM Instance Profile for Elastic Beanstalk Created**: This must have permissions to read from ECR
+- [ ] **GitHub Actions IAM Service Principal Permissions**: This must have permissions to interact with your resources (Elastic Beanstalk, ECR, S3)
+
+#### Azure Prerequisites
+- TBC
+
+Please refer to `./terraform` for further guidance
+
+
+
 #### 1. Workflow Dispatch
-The Dploey workflow should be triggered via a workflow dispatch (manual trigger) in GitHub Actions.
+The Deploy workflow should be triggered via a workflow dispatch (manual trigger) in GitHub Actions.
 
-![WorkflowDispatch](docs/ci-build-workflow-dispatch.png)
-
-Although workflows can be triggered by pushes to branches or pull requests, this workflow can only be triggered by a workflow dispatch for the following reasons: 
-1. **Controlled Input**: Workflow Dispatch allows you to specify inputs in a controlled manner, without having to manually edit files in line
-2. **Cost & Resource Efficiency**: Automatically triggering builds on every push or pull request can lead to excessive usage and increased costs.
+![WorkflowDispatch](docs/cd-workflow-dispatch.png)
 
 Click 'Run Workflow' and provide inputs as instructed.
 
-![WorkflowDispatch](docs/ci-build-inputs.png)
+![WorkflowDispatch](docs/cd-inputs.png)
 
-
-
-#### 3. Create Repos in Cloud Image Registries
-When using this workflow to build and push Docker images to a cloud-based image registry (e.g., AWS ECR or Azure ACR), it's important to ensure that the repository name in your cloud registry matches the name of your GitHub repository.
-
-For example, if your GitHub repository is named `ci-cd-template`, the workflow will attempt to push images to a container repository named `ci-cd-template` in your cloud provider's registry.
-
-
-
-
+--------------------------------------
 
 # General Design Considerations
 The following design patterns were considered when creating workflows.

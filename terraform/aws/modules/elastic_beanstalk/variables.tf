@@ -5,7 +5,7 @@ variable "eb_app_name" {
 
 variable "eb_app_env_name" {
     type = string
-    description = "Name of app env to create using Elastic Beanstalk"
+    description = "Base name of app env to create using Elastic Beanstalk"
 }
 
 variable "service_role_arn" {

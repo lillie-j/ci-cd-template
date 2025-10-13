@@ -11,7 +11,8 @@ resource "aws_elastic_beanstalk_application_version" "app_version" {
 }
 
 resource "aws_elastic_beanstalk_environment" "cicd_app_env" {
-    name = var.eb_app_env_name
+    for_each = toset(["dev", "prod"])
+    name = "${var.eb_app_env_name}-${each.key}"
     description = "App environment for test app to validate CI/CD pipeline"
     application = aws_elastic_beanstalk_application.cicd_app_test.name
     solution_stack_name = "64bit Amazon Linux 2023 v4.7.1 running Docker"

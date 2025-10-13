@@ -1,7 +1,7 @@
 version: '3'
 services:
   frontend:
-    image: 354918377472.dkr.ecr.eu-west-2.amazonaws.com/ci-cd-template/frontend-latest
+    image: 354918377472.dkr.ecr.eu-west-2.amazonaws.com/ci-cd-template-frontend:latest
     ports:
       - "80:8501"
     environment:
@@ -10,7 +10,7 @@ services:
     depends_on:
       - backend
   backend:
-    image: 354918377472.dkr.ecr.eu-west-2.amazonaws.com/ci-cd-template/backend-latest
+    image: 354918377472.dkr.ecr.eu-west-2.amazonaws.com/ci-cd-template-backend:latest
     ports:
       - "8000:8000"
     restart: unless-stopped

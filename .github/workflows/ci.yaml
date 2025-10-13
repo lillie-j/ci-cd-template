@@ -5,36 +5,36 @@ on:
   workflow_dispatch:
     inputs:
       cloud_provider:
-        description: "Target cloud provider to push images to"
+        description: "Cloud provider to push images to"
         required: true
         type: choice
         options: [aws, azure]
 
       dependency_manager:
-        description: "Dependency manager used in your project"
+        description: "Dependency manager used in project"
         required: true
         type: choice
         options: [uv, pipenv, venv]
 
       folders_for_test_coverage:
-        description: "Space delimited list of folders to geneate test coverage reports for | NB: No leading './' required. If empty, tests will run but with no coverage reports. | Example: 'app src'"
+        description: "Space delimited list of folders to generate coverage reports for | NB: No leading './' required. If empty, tests will run with no coverage reports. | Example: 'app src'"
         type: string 
         required: false
 
       exclude_folders_from_linting:
-        description: "Comma separated list of folders to exclude from linting, relative to repo root | NB: No leading './' required & .venv automatically excluded | Example: 'tests,src'"
+        description: "Comma separated list of folders to exclude from linting | NB: No leading './' required & .venv automatically excluded | Example: 'tests,src'"
         required: false
         type: string
         default: tests
 
       ignore_linting_failures:
-        description: "True - lint issues do not trigger failure; False - lint issues trigger failure"
+        description: "Do not fail pipeline if linting detects issues"
         required: false
         type: boolean
         default: true
 
       build_platform:
-        description: "Architecture to build your image for"
+        description: "Architecture to build image for"
         required: true
         type: choice
         options: [linux/amd64, linux/arm64]

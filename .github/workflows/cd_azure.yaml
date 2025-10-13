@@ -1,0 +1,22 @@
+# This workflow:
+# 1. TBC
+name: CD Azure
+
+on:
+  workflow_call:
+    inputs:
+
+env:
+  AZURE_REGISTRY_NAME: ${{ secrets.AZURE_REGISTRY_NAME }}   
+  AZURE_CREDS: ${{ secrets.AZURE_CREDS }}
+
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+
+
+

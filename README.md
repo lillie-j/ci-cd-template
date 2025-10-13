@@ -1,41 +1,57 @@
 # CI/CD Workflow Templates
+[![CI Build](https://github.com/lillie-j/ci-cd-template/actions/workflows/ci.yaml/badge.svg)](https://github.com/lillie-j/ci-cd-template/actions/workflows/ci.yaml)
 [![CD Dispatcher](https://github.com/lillie-j/ci-cd-template/actions/workflows/cd.yaml/badge.svg)](https://github.com/lillie-j/ci-cd-template/actions/workflows/cd.yaml)
+![Docker](https://img.shields.io/badge/Built%20with-Docker-blue?logo=docker&logoColor=white)
+![Python](https://img.shields.io/badge/python-3.12-blue)
 ![Coverage](https://img.shields.io/endpoint?url=https://raw.githubusercontent.com/lillie-j/ci-cd-template/refs/heads/coverage_report/coverage_report.json)
 ![Pylint](https://img.shields.io/endpoint?url=https://raw.githubusercontent.com/lillie-j/ci-cd-template/refs/heads/pylint_badges/pylint.json)
 
-This repository contains template files for CI/CD workflows (GitHub Actions), intended for use in Python-based projects.
+This repository contains template CI/CD workflows (GitHub Actions), intended for use in Python-based projects.
 
-It contains a very simple application, composed of a FastAPI backend and a Streamlit frontend. This application is for demonstrative purposes/to provide code over which CI/CD steps can run.
+It contains a very simple application, composed of a FastAPI backend and a Streamlit frontend, intended to demonstrate the functionality of the CI/CD workflows.
 
 
 # 🛠️ Continuous Integration (CI) Workflows
 
 **Continuous Integration** is the practice of automatically building, testing, and validating code changes to ensure quality and consistency throught the software development lifecycle. It allows you to quickly and confidently integrate changes into your codebase, whilst minimising manual steps and the risk of regressions. 
 
-This repository includes 1 CI Workflow, `.github/workflows/CI Template.yaml`, which is designed to run using **GitHub Actions**. 
+GitHub Actions defines CI/CD workflows through YAML files. These files allow you to programmatically specify a sequence of steps/jobs that are executed by a runner.
 
-GitHub Actions defines CI/CD pipelines through YAML files. These files allow you to programmatically specify a sequence of steps/jobs that are executed by a GitHub-hosted runner.
+This repository includes 3 CI Workflows:
 
+Workflow Name | Path | Description | 
+|-------------|------|-------------
+**CI Build** | `.github/workflows/ci.yaml` | Entrypoint CI workflow – calls the correct CI workflow based on specified cloud platform (AWS or Azure)
+| **CI AWS**            | `.github/workflows/ci_aws.yaml`   | CI job to build and push images to AWS ECR - do not call directly                                     |
+| **CI Azure**          | `.github/workflows/ci_azure.yaml` | CI job to build and push images to Azure ACR - do not call directly                                  |
 
-## `CI Template.yaml`
 
 ### Overview
-This workflow consists of 4 jobs. These are logically separated steps performed by the CI workflow.
+
+Although the exact implementation varies depending on the cloud provider used, there are 4 common jobs in the CI workflow.
+These are logically separated steps performed by the CI workflow.
 
 #### 1. Setup 🏗️
-Installs Python, your chosen dependency manager, and project dependencies.
+* **What**: Installs Python, your chosen dependency manager (e.g. `uv`, `pipenv` etc.) and project dependencies.
+* **Why**: Ensures your project environment is reproducible across different machines and CI runners.
 
 
 #### 2. Test 🧪
-Runs all tests using `pytest` and outputs a coverage report. Any test failures will cause this job to fail.
+* **What**: Runs all tests using `pytest`. Any test failures will cause this job to fail. Optionally generates:
+  * An HTML coverage report as an artifact
+  * A coverage badge like ![badge](https://img.shields.io/badge/Coverage-90%-green) for use in your repo. 
+* **Why**: Validates that your code behaves as expected and helps catch regressions early.
 
 
 #### 3. Linting 🧹
-Checks code style and quality using `flake8` and `pylint`. Also outputs a pylint score badge like ![badge](https://img.shields.io/badge/pylint-10.0-green) for use in your repo.
+* **What**: Checks code style and quality using `flake8` and `pylint`. Can be configured to fail if any issues detected. Also generates:
+  * A pylint score badge like ![badge](https://img.shields.io/badge/pylint-10.0-green) for use in your repo. 
+* **Why**: Promotes clean, maintainable code and enforces consistent style across the project.
 
 
 #### 4. Docker Build/Push 🐋
-Builds your app into a Docker Image/Images, enabling them to run as a containerised service.
+* **What**: Builds your app into a Docker Image\/Images & pushes to your cloud provider's image registry (AWS ECR or Azure ACR).
+* **Why**: Packages your application as a portable artifact, enabling reproducible deployments and containerised execution
 
 ----------------------------------
 
@@ -58,32 +74,28 @@ cp ci-cd-template/requirements.ci.txt <path/to/your/repo>
 
 To push Docker images to a cloud registry, define the following secrets in your GitHub repository using **GitHub Secrets**. Access to cloud registry is expected via a service principal.
 
-**NB**: Azure Push is still WIP 
 
 | Cloud Provider   | Image Registry     | Secret Names                |
 |------------------|--------------------|--------------------------|
 | **AWS**  | Elastic Container Registry | AWS_ACCESS_KEY_ID, AWS_SECRET_ACCESS_KEY,AWS_REGION                  
-| **Azure** | (Azure Container Registry) | AZURE_CREDS, AZURE_REGISTRY_NAME 
+| **Azure** | Azure Container Registry | AZURE_CREDS, AZURE_REGISTRY_NAME 
 
+#### 3. Create Repos in Cloud Image Registries
+When using this workflow to build and push Docker images to a cloud-based image registry (e.g., AWS ECR or Azure ACR), it's important to ensure that the repository name in your cloud registry matches the name of your GitHub repository.
 
-#### 3. Set Environment Variables
-The behaviour of the workflow can be varied slightly depending on your requirements. This is done by modifying the following environment variables at the top of the workflow file.
-
-| Variable                         | Used in Job        | Purpose     | Format  | Example|
-|----------------------------------|--------------------|--------------------|---------------|-----------|
-| **DEPENDENCY_MANAGER**           | 1. Setup 🏗️       | Choose which dependency manager to use to rebuild environment| `'uv'` `'pipenv'` `'venv'` | `'uv'`               
-| **EXCLUDE_FOLDERS_FROM_LINTING** | 3. Linting 🧹     | Choose which folders to exclude from linting    | String list of folders (no need to define relative to root) | `'tests,src'`        
-| **IGNORE_LINTING_FAILURES**      | 3. Linting 🧹     | Choose whether to fail job if linters detect issues | `'true'` `'false'` | `'true'`  
-| **CLOUD_REGISTRY**               | 4. Docker Build 🐋| Choose which cloud provider hosts your image registry/to push to |  `'aws'` `'azure'` `'none'` | `'aws'`
-| **BUILD_PLATFORM**               | 4. Docker Build 🐋| Choose which platform your Docker image should be built for | See Docker supported [build platforms](https://docs.docker.com/reference/cli/docker/buildx/build/) |  `'linux/amd64'`
+For example, if your GitHub repository is named `ci-cd-template`, the workflow will attempt to push images to a container repository named `ci-cd-template` in your cloud provider's registry.
 
 #### 4. Set Matrix Variables
-Matrix builds allow parallel execution of jobs with different inputs. In this workflow, the Docker Build job uses a matrix to build multiple images concurrently.
+Matrix builds allow parallel execution of jobs with different inputs, improving efficiency. In this workflow, the Docker Build job uses a matrix strategy to build multiple images concurrently.
 
-Environment variables cannot be easily injected into matrix variables, and so matrix variables need to be defined in line as below.
+Each matrix entry defines a build context, which is the directory used as the root for the Docker build. The Dockerfile for each image must reside within its corresponding build context.
+
+Dynamic inputs cannot be injected into matrix variables. Therefore, all matrix values must be explicitly defined within the workflow file.
+
+⚠️ **ACTION REQUIRED**: To configure the matrix, manually specify the build context paths in the workflow YAMLs as shown below. Update these paths to match the structure and requirements of your project:
 
 
-`ci-template.yaml`
+`ci-aws.yaml` or `ci-azure.yaml`
 ```
   Docker_Build:
     needs: Test
@@ -91,46 +103,105 @@ Environment variables cannot be easily injected into matrix variables, and so ma
     strategy:
       fail-fast: false
       matrix:
-        context: ["./src/backend","./src/frontend"] #EDIT THIS VARIABLE
+        context: ["./app/backend","./app/frontend"] #EDIT THIS VARIABLE
         # Each path should point to a folder containing a Dockerfile.
         # Each Dockerfile is assumed to be in the same folder as its build context.
 ```
-#### 5. Create Repos in Cloud Image Registries
-When using this workflow to build and push Docker images to a cloud-based image registry (e.g., AWS ECR or Azure ACR), it's important to ensure that the repository name in your cloud registry matches the name of your GitHub repository.
 
-For example, if your GitHub repository is named ci-cd-template, the workflow will attempt to push images to a container repository named ci-cd-template in your cloud provider's registry.
+#### 5. Workflow Dispatch
+The CI Build workflow should be triggered via a workflow dispatch (manual trigger) in GitHub Actions.
 
-#### 6. Push Changes
-Push changes to your remote repo and then raise a PR into `main`. This should trigger the workflow and validate whether it has been setup correctly.
+![WorkflowDispatch](docs/ci-build-workflow-dispatch.png)
 
----------------------------------------
+Although workflows can be triggered by pushes to branches or pull requests, this workflow can only be triggered by a workflow dispatch for the following reasons: 
+1. **Controlled Input**: Workflow Dispatch allows you to specify inputs in a controlled manner, without having to manually edit files in line
+2. **Cost & Resource Efficiency**: Automatically triggering builds on every push or pull request can lead to excessive usage and increased costs.
+
+Click 'Run Workflow' and provide inputs as instructed.
+
+![WorkflowDispatch](docs/ci-build-inputs.png)
 
 
-## A Note on CodeQL & CI
-CodeQL is a powerful static analysis tool developed by GitHub that scans your codebase for potential security vulnerabilities. It detects patterns that may indicate security flaws, such as SQL injection, cross-site scripting, etc.
+#### A Note on Defaults:
+To simplify CI builds, default values have been provided for certain inputs. These may not be applicable to your project and may actually add inconvenience.
 
-CodeQL scans can be integrated directly into your CI/CD pipeline using custom workflow YAML files. Therefore, it *could* have been included in `CI Template.yaml`. However, for most use cases—especially for client demonstrators or non-production applications—CodeQL may be considered out of scope. Its primary value lies in securing production-grade applications with complex logic and external integrations. This is why it is not included in the template CI workflow.
+To modify default values, please edit the default entries in `ci.yaml`
 
-If wanted, CodeQL can be more easily setup via the GitHub GUI. To enable this:
+```yaml
+on:
+  workflow_dispatch:
+    inputs:
+      exclude_folders_from_linting:
+        description: "
+          Comma separated list of folders to exclude from linting
+          NB: No leading './' required & .venv  automatically excluded
+          Example: 'tests,src'"
+        required: false
+        type: string
+        default: tests
 
-1. Navigate to your repository on GitHub.
-2. Click Settings from the top navigation bar.
-3. In the left-hand menu, go to Security > Code security and analysis.
-4. Scroll down to the Code scanning section.
-5. Click Set up CodeQL and follow the prompts to enable default analysis.
-6. Optionally, configure the scan frequency and scope (e.g., branches, languages).
+      ignore_linting_failures:
+        description: "Do not fail pipeline if linting detects issues"
+        required: false
+        type: boolean
+        default: true
 
+      build_platform:
+        description: "Architecture to build image for"
+        required: true
+        type: choice
+        options: [linux/amd64, linux/arm64]
+        default: linux/amd64
+```
+
+-------------------------------------------
 # 🚀 Continuous Deployment (CD) Workflows
 
 Continuous Deployment is the practice of automatically releasing validated code changes to a target environment once they pass all required checks in CI. It extends the principles of CI by eliminating manual deployment steps, enabling faster and more reliable delivery of software.
 
 
-## `CD Template.yaml` (COMING SOON)
+This repository includes 3 CD Workflows:
+
+Workflow Name | Path | Description | 
+|-------------|------|-------------
+**Deploy** | `.github/workflows/cd.yaml` | Entrypoint CD workflow – calls the correct CD workflow based on specified cloud platform (AWS or Azure)
+| **CD AWS**            | `.github/workflows/cd_aws.yaml`   | CD job to deploy to Elastic Beanstalk - do not call directly                                     |
+| **CD Azure**          | `.github/workflows/cd_azure.yaml` | CD job to deploy to Azure Web Apps - do not call directly                                  |
+
+### Overview
+
+Although images can be deployed in a number of ways (e.g. container services like Azure Container Apps, AWS ECS; Kubernetes services like AKS, EKS etc.), for simplicity's sake, and because this setup is intended for demonstrators rather than production workloads, this workflow will use the cloud provider's managed application service.
+
+### How to Use 🧑‍💻
+
+This assumes that you have already followed steps 1 & 2 in the 'How to Use' section for CI Workflows.
+
+#### 1. Workflow Dispatch
+The Dploey workflow should be triggered via a workflow dispatch (manual trigger) in GitHub Actions.
+
+![WorkflowDispatch](docs/ci-build-workflow-dispatch.png)
+
+Although workflows can be triggered by pushes to branches or pull requests, this workflow can only be triggered by a workflow dispatch for the following reasons: 
+1. **Controlled Input**: Workflow Dispatch allows you to specify inputs in a controlled manner, without having to manually edit files in line
+2. **Cost & Resource Efficiency**: Automatically triggering builds on every push or pull request can lead to excessive usage and increased costs.
+
+Click 'Run Workflow' and provide inputs as instructed.
+
+![WorkflowDispatch](docs/ci-build-inputs.png)
+
+
+
+#### 3. Create Repos in Cloud Image Registries
+When using this workflow to build and push Docker images to a cloud-based image registry (e.g., AWS ECR or Azure ACR), it's important to ensure that the repository name in your cloud registry matches the name of your GitHub repository.
+
+For example, if your GitHub repository is named `ci-cd-template`, the workflow will attempt to push images to a container repository named `ci-cd-template` in your cloud provider's registry.
+
+
 
 
 
 # General Design Considerations
-The following design patterns were considered when creating workflows. They are written here to in case the user wants to write their own workflows and doesn't know where to start...
+The following design patterns were considered when creating workflows.
 #### 1. Job Based Workflow Structure
 
 Workflows are split into distinct jobs (e.g., Setup, Test, Linting, Docker Build), each representing a logical unit of work. 

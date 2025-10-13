@@ -5,13 +5,13 @@ on:
   workflow_dispatch:
     inputs:
       cloud_provider:
-        description: "Target cloud provider to deploy to"
+        description: "Cloud provider to deploy to"
         required: true
         type: choice
         options: [aws, azure]
 
       docker_compose_path:
-        description: "AWS ONLY: Path to docker-compose.yml file (needed for AWS multi-container deployments)"
+        description: "AWS ONLY: Path to docker-compose.yml file"
         required: False
         type: string
         default: ./app/docker-compose.yml

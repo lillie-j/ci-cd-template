@@ -1,6 +1,6 @@
 #!/bin/bash
-# Usage: lint_with_flake8.sh <true/false> <comma separated folders to exclude (no leading . & .venv automatically excluded)>
-# Example: lint_with_flake8.sh "true" "src,tests"
+# Usage: ./lint_with_flake8.sh <true/false> <comma separated folders to exclude (no leading . & .venv automatically excluded)>
+# Example: ./lint_with_flake8.sh "true" "src,tests"
 
 TRUE_OR_FALSE="$1"
 FOLDERS="$2"

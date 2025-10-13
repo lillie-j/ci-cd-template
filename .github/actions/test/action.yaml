@@ -25,3 +25,19 @@ runs:
       name: "coverage_report-${{ steps.short-sha.outputs.short_sha }}"
       path: htmlcov/
       if-no-files-found: ignore
+
+  - name: Push Coverage Score Badge to Badges Branch
+    shell: bash
+    run: |
+        git config --global user.name "github-actions[bot]"
+        git config --global user.email "github-actions[bot]@users.noreply.github.com"
+        git remote set-url origin https://x-access-token:${{ inputs.github_token }}@github.com/${{ github.repository }}
+        git checkout coverage_report || git checkout --orphan coverage_report
+        cp coverage_report.json /tmp/coverage_report.json
+        git rm -rf .
+        cp /tmp/coverage_report.json .
+        git add coverage_report.json
+        git commit -m "Update coverage score from ${GITHUB_REF#refs/heads/} commit ${GITHUB_SHA}"
+        git push -f origin coverage_report 
+        git checkout $GITHUB_REF_NAME
+

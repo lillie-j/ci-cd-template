@@ -1,5 +1,5 @@
 # Cloud Agnostic Dispatcher job which chooses the correct CI workflow to call (AWS or Azure)
-name: CI Dispatcher
+name: CI Build
 
 on:
   workflow_dispatch:
@@ -39,6 +39,10 @@ on:
         type: choice
         options: [linux/amd64, linux/arm64]
         default: linux/amd64
+
+
+permissions:
+  contents: write
 
 
 jobs:

@@ -41,3 +41,11 @@ python -m pybadges \
 --right-text="$SCORE" \
 --right-color="$COLOR" \
 > pylint-badge.svg
+
+jq -n --arg score "$SCORE" --arg color "$COLOR" \
+'{
+  schemaVersion: 1,
+  label: "pylint",
+  message: $score,
+  color: $color
+  }' > pylint.json

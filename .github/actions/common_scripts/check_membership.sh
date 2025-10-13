@@ -1,5 +1,5 @@
 #!/bin/bash
-# Usage: check_membership.sh <item> <list>
+# Usage: ./check_membership.sh <item> <list>
 # Example: ./check_membership.sh "uv" "uv pipenv venv"
 
 INPUT="$1"

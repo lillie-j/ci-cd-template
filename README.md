@@ -1,4 +1,8 @@
 # CI/CD Workflow Templates
+[![CD Dispatcher](https://github.com/lillie-j/ci-cd-template/actions/workflows/cd.yaml/badge.svg)](https://github.com/lillie-j/ci-cd-template/actions/workflows/cd.yaml)
+![Coverage](https://img.shields.io/endpoint?url=https://raw.githubusercontent.com/lillie-j/ci-cd-template/refs/heads/coverage_report/coverage_report.json)
+![Pylint](https://img.shields.io/endpoint?url=https://raw.githubusercontent.com/lillie-j/ci-cd-template/refs/heads/pylint_badges/pylint.json)
+
 This repository contains template files for CI/CD workflows (GitHub Actions), intended for use in Python-based projects.
 
 It contains a very simple application, composed of a FastAPI backend and a Streamlit frontend. This application is for demonstrative purposes/to provide code over which CI/CD steps can run.

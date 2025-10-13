@@ -1,5 +1,4 @@
 **/__pycache__/**
-pylint*
 !bandit.yaml
 *.xlsx
 */.terraform*

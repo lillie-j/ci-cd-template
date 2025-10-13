@@ -9,6 +9,10 @@ inputs:
     description: Set to 'true' to not fail if linters detect issues, 'false' to fail if linters detect issues.
     required: false
     default: "true"
+  github_token:
+    required: true
+    description: GitHub token for authentication
+
 runs:
   using: composite
   steps:
@@ -37,3 +41,20 @@ runs:
         name: "pylint-badge-${{ steps.short-sha.outputs.short_sha }}.svg"
         path: pylint-badge.svg
         if-no-files-found: ignore
+
+    - name: Push Pylint Badge to Badges Branch
+      shell: bash
+      run: |
+        git config --global user.name "github-actions[bot]"
+        git config --global user.email "github-actions[bot]@users.noreply.github.com"
+        git remote set-url origin https://x-access-token:${{ inputs.github_token }}@github.com/${{ github.repository }}
+        git checkout pylint_badges || git checkout --orphan pylint_badges
+        cp pylint.json /tmp/pylint.json
+        git rm -rf .
+        cp /tmp/pylint.json .
+        git add pylint.json
+        git commit -m "Update Pylint badge from ${GITHUB_REF#refs/heads/} commit ${GITHUB_SHA}"
+        git push -f origin pylint_badges 
+        git checkout $GITHUB_REF_NAME
+
+        

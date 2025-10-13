@@ -1,6 +1,6 @@
 #!/bin/bash
-# Usage: validate_docker_context.sh <build_context>
-# Example: validate_docker_context.sh ./src/backend
+# Usage: ./validate_docker_context.sh <build_context>
+# Example: ./validate_docker_context.sh ./src/backend
       
 CONTEXT="$1"
 

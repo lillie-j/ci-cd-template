@@ -1,5 +1,5 @@
 # Cloud Agnostic Dispatcher job which chooses the correct CD workflow to call (AWS or Azure)
-name: CD Dispatcher
+name: Deploy
 
 on:
   workflow_dispatch:

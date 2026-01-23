@@ -76,6 +76,20 @@ jobs:
       build_platform: ${{ github.event.inputs.build_platform }}
 
 
+  ci_azure:
+    needs: dispatch
+    if: ${{ inputs.cloud_provider == 'azure' }}
+    uses: ./.github/workflows/ci_azure.yaml
+    secrets: inherit
+    with:
+      cloud_provider: ${{ github.event.inputs.cloud_provider }}
+      dependency_manager: ${{ github.event.inputs.dependency_manager }}
+      folders_for_test_coverage: ${{ github.event.inputs.folders_for_test_coverage }}
+      exclude_folders_from_linting: ${{ github.event.inputs.exclude_folders_from_linting }}
+      ignore_linting_failures: ${{ github.event.inputs.ignore_linting_failures }}
+      build_platform: ${{ github.event.inputs.build_platform }}
+
+
 
 
 

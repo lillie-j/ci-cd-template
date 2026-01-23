@@ -22,8 +22,8 @@ This repository includes 3 CI Workflows:
 Workflow Name | Path | Description | 
 |-------------|------|-------------
 **CI Build** | `.github/workflows/ci.yaml` | Entrypoint CI workflow – calls the correct CI workflow based on specified cloud platform (AWS or Azure)
-| **CI AWS**            | `.github/workflows/ci_aws.yaml`   | CI job to build and push images to AWS ECR - do not call directly                                     |
-| **CI Azure**          | `.github/workflows/ci_azure.yaml` | CI job to build and push images to Azure ACR - do not call directly                                  |
+| **CI AWS**            | `.github/workflows/ci_aws.yaml`   | CI job to build and push images to AWS ECR - do not call directly|
+| **CI Azure**          | `.github/workflows/ci_azure.yaml` | CI job to build and push images to Azure ACR - do not call directly|
 
 
 ### Overview
@@ -60,7 +60,7 @@ These are logically separated steps performed by the CI workflow.
 #### Prerequisites
 - [ ] **Repos Created in Cloud Image Registry**: The workflow will attempt to push images to an image registry repo which follows the following naming convention: `<GITHUB REPO>-<BUILD CONTEXT BASENAME>`. for example, if your GitHub repository is named `ci-cd-template` and you have an image/build context in `./app/backend`, the workflow will attempt to push an image to a container repository named `ci-cd-template-backend` in your cloud provider's registry. This will have 2 tags: 1 tagged with the short commit SHA, 1 tagged with 'latest'
 
-- [ ] **GitHub Actions IAM Service Principal Permissions**: This must have permissions to interact with your image registry
+- [ ] **Create IAM Service Principal for GitHub Actions**: AWS or Azure IAM principal/service account with permissions to interact with your image registry
 
 #### 1. Clone Repo
 The following folders need to be copied into your repo to make this workflow available
@@ -76,7 +76,7 @@ cp ci-cd-template/requirements.ci.txt <path/to/your/repo>
 
 #### 2. Set Secrets
 
-To push Docker images to a cloud registry, define the following secrets in your GitHub repository using **GitHub Secrets**. For simplicity, access to cloud resources is expected via a service principal rather than OIDC federation.
+To push Docker images to a cloud registry, define the following secrets in your GitHub repository using **GitHub Secrets**.
 
 
 | Cloud Provider   | Image Registry     | Secret Names                |
@@ -86,7 +86,7 @@ To push Docker images to a cloud registry, define the following secrets in your 
 
 
 #### 3. Set Matrix Variables
-Matrix builds allow parallel execution of jobs with different inputs, improving efficiency. In this workflow, the Docker Build job uses a matrix strategy to build multiple images concurrently.
+In this workflow, the Docker Build job uses a matrix strategy to build multiple images concurrently.
 
 Each matrix entry defines a build context, which is the directory used as the root for the Docker build. The Dockerfile for each image must reside within its corresponding build context.
 
@@ -119,40 +119,11 @@ Although workflows can be triggered by pushes to branches or pull requests, this
 
 Click 'Run Workflow' and provide inputs as instructed.
 
-![WorkflowDispatch](docs/ci-build-inputs.png)
-
 
 #### A Note on Defaults:
-To simplify CI builds, default values have been provided for certain inputs. These may not be applicable to your project and may actually add inconvenience.
-
+To simplify CI builds, default values have been provided for certain inputs. 
 To modify default values, please edit the default entries in `ci.yaml`
 
-```yaml
-on:
-  workflow_dispatch:
-    inputs:
-      exclude_folders_from_linting:
-        description: "
-          Comma separated list of folders to exclude from linting
-          NB: No leading './' required & .venv  automatically excluded
-          Example: 'tests,src'"
-        required: false
-        type: string
-        default: tests
-
-      ignore_linting_failures:
-        description: "Do not fail pipeline if linting detects issues"
-        required: false
-        type: boolean
-        default: true
-
-      build_platform:
-        description: "Architecture to build image for"
-        required: true
-        type: choice
-        options: [linux/amd64, linux/arm64]
-        default: linux/amd64
-```
 
 -------------------------------------------
 # 🚀 Continuous Deployment (CD) Workflows
@@ -166,20 +137,22 @@ Workflow Name | Path | Description |
 |-------------|------|-------------
 **Deploy** | `.github/workflows/cd.yaml` | Entrypoint CD workflow – calls the correct CD workflow based on specified cloud platform (AWS or Azure)
 | **CD AWS**            | `.github/workflows/cd_aws.yaml`   | CD job to deploy to Elastic Beanstalk - do not call directly                                     |
-| **CD Azure**          | `.github/workflows/cd_azure.yaml` | CD job to deploy to Azure Web Apps - do not call directly                                  |
+| **CD Azure**          | `.github/workflows/cd_azure.yaml` | WIP
 
 ### Overview
 
-Although images can be deployed in a number of ways (e.g. container services like Azure Container Apps, AWS ECS; Kubernetes services like AKS, EKS etc.), for simplicity's sake, and because this setup is intended for demonstrators rather than production workloads, this workflow will use the cloud provider's managed application service.
+Although images can be deployed in a number of ways (e.g. container services like Azure Container Apps, AWS ECS; Kubernetes services like AKS, EKS etc.), for simplicity's sake, this workflow will use the cloud provider's managed application service.
 
 ### How to Use 🧑‍💻
 
 This assumes that you have already followed steps 1 & 2 in the 'How to Use' section for CI Workflows.
 
 #### AWS Prerequisites
+Assumes that resources have already been created. Please refer to `./terraform` for further guidance
+
 - [ ] **Elastic Beanstalk Envioronment Created**: App needs to be deployed in an Elastic Beanstalk environment.
 - [ ] **Elastic Beanstalk App Created**: Deployment will update version of an Elastic Beanstalk App which already exists & redeploy.
-- [ ] **Ensure docker-compose.yml points to correct images** Update docker compose.yml to point to correct images. For simplicity, the CI workflow will always push an image with a `:latest` tag.
+- [ ] **Ensure docker-compose.yml points to ECR images** Update docker compose.yml to point to correct images. For simplicity, the CI workflow will always push an image with a `:latest` tag.
 - [ ] **S3 Bucket for Source Bundle Created**: App must be deployed from a source bundle (zipped `docker-compose.yml`) stored in a S3 bucket
 - [ ] **IAM Instance Profile for Elastic Beanstalk Created**: This must have permissions to read from ECR
 - [ ] **GitHub Actions IAM Service Principal Permissions**: This must have permissions to interact with your resources (Elastic Beanstalk, ECR, S3)
@@ -187,7 +160,7 @@ This assumes that you have already followed steps 1 & 2 in the 'How to Use' sect
 #### Azure Prerequisites
 - TBC
 
-Please refer to `./terraform` for further guidance
+
 
 
 
@@ -202,37 +175,15 @@ Click 'Run Workflow' and provide inputs as instructed.
 
 --------------------------------------
 
-# General Design Considerations
-The following design patterns were considered when creating workflows.
-#### 1. Job Based Workflow Structure
+# Building Your Own
+This repository contains a number of workflows to demonstrate the CI/CD process generally.
 
-Workflows are split into distinct jobs (e.g., Setup, Test, Linting, Docker Build), each representing a logical unit of work. 
+However, these may not be suitable for your use case. If required, please add additional functionality based on your use case.
 
-* **Dependency Control**: Jobs can be configured to run only if prerequisite jobs succeed. For example, the Docker Build job will only execute if tests pass, preventing unnecessary builds.
-* **Parallel Execution**: Independent jobs (e.g., Linting and Testing) can run concurrently, reducing overall workflow duration.
-* **Clear Separation of Concerns**: Each job focuses on a single responsibility, making the workflow easier to understand and maintain.
+The design patterns used here, should provide a rough guide on how to implement CI/CD via GitHub Actions in a modular/manageable way, such as:
+* Composite Workflows
+* Composite Actions
+* Matrix Builds
+* Abstracting complex logic into scripts
 
-#### 2. Caching for Dependency Management
-
-To avoid reinstalling dependencies on every run, workflows uses caching mechanisms.
-
-* **Speed Optimisation**: Cached dependencies significantly reduce setup time, especially in large projects with many packages.
-
-#### 3. Matrix Builds for Parallelisation
-Matrix variables are used to run multiple instances of a job (Docker Build) in parallel with differnt inputs. 
-
-* **Speed Optimisation**: Reduces total build time
-
-#### 4. Composite Actions for Modularity
-
-Reusable composite actions are defined in .github/actions, encapsulating common sequences of steps:
-
-* **Encapsulation**: Complex logic is abstracted into their own action.yaml files, improving readability in the main workflow file.
-* **Reusability**: These actions can be reused across multiple workflows or repositories (theoretically...).
-* **Maintainability**: Changes to shared logic only need to be made in one place.
-
-#### 5. Script Abstraction for Maintainability
-Where appropriate, shell scripts are abstracted into standalone .sh files (rather than defined inline in YAML) and invoked from workflows.
-
-* **Testing**: Easier to test locally without triggering a workflow.
-* **Maintainability**: Cleaner and more readable YAML & promotes reuse of scripts
+Feel free to use any existing actions/workflows, which you can find in `./.github` as building blocks for your own!

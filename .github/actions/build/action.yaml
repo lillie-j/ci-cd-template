@@ -104,18 +104,18 @@ runs:
     if: ${{ inputs.cloud-registry == 'azure' }}
     shell: bash
     run: |
-      ACR_REGISTRY="${{ inputs.AZURE_REGISTRY_NAME }}.azurecr.io"
+      ACR_LOGIN_SERVER="${{ inputs.AZURE_REGISTRY_NAME }}.azurecr.io"
   
       docker buildx build \
         --platform "${{ inputs.build-platform }}" \
-        --tag "$ACR_REGISTRY/${{ env.TAG }}" \
-        --tag "$ACR_REGISTRY/${{ env.LATEST_TAG }}" \
+        --tag "$ACR_LOGIN_SERVER/${{ env.TAG }}" \
+        --tag "$ACR_LOGIN_SERVER/${{ env.LATEST_TAG }}" \
         --file "${{ inputs.docker-context-path }}/Dockerfile" \
         "${{ inputs.docker-context-path }}" \
         --load
 
-      docker push "$ACR_REGISTRY/${{ env.TAG }}"
-      docker push "$ACR_REGISTRY/${{ env.LATEST_TAG }}"
+      docker push "$ACR_LOGIN_SERVER/${{ env.TAG }}"
+      docker push "$ACR_LOGIN_SERVER/${{ env.LATEST_TAG }}"
 
 # Build and Push to GitHub Artifacts as .tar.gz
   - name: Build and tag Docker image

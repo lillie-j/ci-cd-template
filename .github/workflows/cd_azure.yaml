@@ -9,7 +9,7 @@ on:
       image_name:
         description: "Name of Image"
         type: choice
-        options: [backend, frontend]
+        options: [ci-cd-template-backend, ci-cd-template-frontend]
       image_tag:
         description: "Tag of image to deploy"
         type: string

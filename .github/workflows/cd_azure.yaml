@@ -18,7 +18,7 @@ on:
       azure_web_app_name:
         description: "Name of Azure Web App to deploy"
         type: choice
-        options: [cicdtestbackend, cicdetestfrontend]
+        options: [cicdtestbackend, cicdtestfrontend]
 
 
 env:

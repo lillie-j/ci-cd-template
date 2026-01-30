@@ -18,7 +18,7 @@ on:
       azure_web_app_name:
         description: "Name of Azure Web App to deploy"
         type: choice
-        options: [cicdtest-backend, cicdetest-frontend]
+        options: [cicdtestbackend, cicdetestfrontend]
 
 
 jobs:
@@ -31,8 +31,8 @@ jobs:
       - name: Map App to Publish Profile
         run: |
           declare -A mapping
-          mapping["cicdtest-backend"]="${{ secrets.AZURE_WEBAPP_PUBLISH_PROFILE_CICDTEST_BACKEND }}"
-          mapping["cicdtest-frontend"]="${{ secrets.AZURE_WEBAPP_PUBLISH_PROFILE_cicdtest-frontend }}"
+          mapping["cicdtestbackend"]="${{ secrets.AZURE_WEBAPP_PUBLISH_PROFILE_CICDTEST_BACKEND }}"
+          mapping["cicdtestfrontend"]="${{ secrets.AZURE_WEBAPP_PUBLISH_PROFILE_CICDTEST_FRONTEND }}"
           # This is the closest we can get to dynamic secrets/publish profiles without creating multiple workflows for each app - these must be manualy updated...
           # Ensure that each azure web app has it's own publish profile uploaded to Secrets
 

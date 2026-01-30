@@ -4,20 +4,38 @@
 name: CD AWS
 
 on:
-  workflow_call:
+  workflow_dispatch:
     inputs:
+      env:
+        description: "Environment to deploy to"
+        required: true
+        type: choice
+        options: [dev, prod]
+
       docker_compose_path:
-        description: "Path to docker-compose.yml file | Example: './app/docker-compose.yml'"
+        description: "Path to docker-compose.yml file"
+        required: False
         type: string
+        default: ./app/docker-compose.yml
+
       s3_bucket_id:
-        description: "ID of S3 Bucket to upload source bundle to"
+        description: "S3 Bucket ID to store source bundle in"
+        required: false
         type: string
+        default: ci-cd-app-bucket
+
       elastic_beanstalk_app_name:
         description: "Name of Elastic Beanstalk App"
+        required: false
         type: string
-      elastic_beanstalk_app_environment:
-        description: "Fully Qualified Name of Elastic Beanstalk Environment (incl dev, prod etc.)"
+        default: cicd-test-app1
+
+      elastic_beanstalk_environment_name:
+        description: "Name of Elastic Beanstalk Environment"
+        required: false
         type: string
+        default: cicd-test-app-env1
+
 
 env:
   AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
@@ -42,16 +60,13 @@ jobs:
         uses: ./.github/actions/source_bundle
         id: s3_upload
         with:
-          path_to_docker_compose: ${{ inputs.docker_compose_path }}
-          s3_bucket_id: ${{ inputs.s3_bucket_id }}
+          path_to_docker_compose: ${{ github.event.inputs.docker_compose_path }}
+          s3_bucket_id: ${{ github.event.inputs.s3_bucket_id }}
 
       - name: Upload New App Version to Elastic Beanstalk
         uses: ./.github/actions/deploy_to_eb
         with:
-            s3_bucket_id: ${{ inputs.s3_bucket_id }}
+            s3_bucket_id: ${{ github.event.inputs.s3_bucket_id }}
             s3_bucket_key: ${{ steps.s3_upload.outputs.source_bundle_s3_key }}
-            application_name: ${{ inputs.elastic_beanstalk_app_name }}
-            eb_environment_name: ${{ inputs.elastic_beanstalk_app_environment }}
-
-
-
+            application_name: ${{ github.event.inputs.elastic_beanstalk_app_name }}
+            eb_environment_name: ${{ github.event.inputs.elastic_beanstalk_environment_name }}-${{ github.event.inputs.env }}

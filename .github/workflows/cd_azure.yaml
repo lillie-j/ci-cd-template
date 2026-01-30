@@ -3,19 +3,53 @@
 name: CD Azure
 
 on:
-  workflow_call:
+  workflow_dispatch:
     inputs:
 
-env:
-  AZURE_REGISTRY_NAME: ${{ secrets.AZURE_REGISTRY_NAME }}   
-  AZURE_CREDS: ${{ secrets.AZURE_CREDS }}
+      image_name:
+        description: "Name of Image"
+        type: choice
+        options: [backend, frontend]
+      image_tag:
+        description: "Tag of image to deploy"
+        type: string
+        required: true
+        default: latest
+      azure_web_app_name:
+        description: "Name of Azure Web App to deploy"
+        type: string
+        required: true
+        default: [cicdtest-backend, cicdetest-frontend]
 
 
 jobs:
   deploy:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - name: Checkout Code
+        uses: actions/checkout@v4
+
+      - name: Map App to Publish Profile
+        run: |
+          declare -A mapping
+          mapping["cicdtest-backend"]="${{ secrets.AZURE_WEBAPP_PUBLISH_PROFILE_CICDTEST_BACKEND }}"
+          mapping["cicdtest-frontend"]="${{ secrets.AZURE_WEBAPP_PUBLISH_PROFILE_cicdtest-frontend }}"
+          # This is the closest we can get to dynamic secrets/publish profiles without creating multiple workflows for each app - these must be manualy updated...
+          # Ensure that each azure web app has it's own publish profile uploaded to Secrets
+
+          APP="${{ github.event.inputs.azure_web_app_name }}"
+
+          # Additional safety measure to ensure publish profile is not mishandled.
+          echo "::add-mask::${mapping[$APP]}"
+          echo "PUBLISH_PROFILE=${mapping[$APP]}" >> $GITHUB_ENV
+
+
+      - name: Deploy to Azure App Service
+        uses: azure/webapps-deploy@v2
+        with:
+          app-name: ${{ github.event.inputs.azure_web_app_name }}
+          images: ${{ secrets.ACR_LOGIN_SERVER }}/${{ github.event.inputs.image_name }}:${{ github.event.inputs.image_tag }}
+          publish-profile: ${{ env.PUBLISH_PROFILE }}
 
 
 

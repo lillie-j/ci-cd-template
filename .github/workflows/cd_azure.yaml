@@ -21,6 +21,12 @@ on:
         options: [cicdtestbackend, cicdetestfrontend]
 
 
+env:
+    CICDTEST_BACKEND: ${{ secrets.AZURE_WEBAPP_PUBLISH_PROFILE_CICDTEST_BACKEND }}
+    CICDTEST_FRONTEND: ${{ secrets.AZURE_WEBAPP_PUBLISH_PROFILE_CICDTEST_FRONTEND }}
+
+
+
 jobs:
   deploy:
     runs-on: ubuntu-latest
@@ -32,8 +38,8 @@ jobs:
         shell: bash
         run: |
           declare -A mapping
-          mapping["cicdtestbackend"]="${{ secrets.AZURE_WEBAPP_PUBLISH_PROFILE_CICDTEST_BACKEND }}"
-          mapping["cicdtestfrontend"]="${{ secrets.AZURE_WEBAPP_PUBLISH_PROFILE_CICDTEST_FRONTEND }}"
+          mapping["cicdtestbackend"]="$CICDTEST_BACKEND"
+          mapping["cicdtestfrontend"]="$CICDTEST_FRONTEND"
           # This is the closest we can get to dynamic secrets/publish profiles without creating multiple workflows for each app - these must be manualy updated...
           # Ensure that each azure web app has it's own publish profile uploaded to Secrets
 

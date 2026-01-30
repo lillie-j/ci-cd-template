@@ -35,8 +35,9 @@ on:
 
    
 env:
-  AZURE_REGISTRY_NAME: ${{ secrets.AZURE_REGISTRY_NAME }}   
-  AZURE_CREDS: ${{ secrets.AZURE_CREDS }}
+  ACR_LOGIN_SERVER: ${{ secrets.ACR_LOGIN_SERVER}}   
+  ACR_USERNAME: ${{ secrets.ACR_USERNAME }}
+  ACR_PASSWORD: ${{ secrets.ACR_PASSWORD }}
 
 
 jobs:
@@ -116,6 +117,7 @@ jobs:
           docker-context-path: ${{ matrix.context }}
           cloud-registry: ${{ inputs.cloud_provider }}
           build-platform: ${{ inputs.build_platform }}
-          AZURE_REGISTRY_NAME: ${{ env.AZURE_REGISTRY_NAME }}
-          AZURE_CREDS: ${{ env.AZURE_CREDS }}
+          ACR_LOGIN_SERVER: ${{ env.ACR_LOGIN_SERVER}}   
+          ACR_USERNAME: ${{ env.ACR_USERNAME }}
+          ACR_PASSWORD: ${{ env.ACR_PASSWORD }}
 

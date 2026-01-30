@@ -22,10 +22,13 @@ inputs:
   AWS_REGION:
     description: AWS Region of Account (Hosted in GitHub Secrets)
     required: false
-  AZURE_CREDS:
-    description: Azure Service Principal Credentials (JSON Hosted in GitHub Secrets)
-  AZURE_REGISTRY_NAME:
-    description: Name of Azure Container Registry (Hosted in GitHub Secrets)
+  ACR_LOGIN_SERVER:
+    description: Azure ACR Login Server
+  ACR_USERNAME:
+    description: Azure ACR Username
+    required: false
+  ACR_PASSWORD:
+    description: Azure ACR password
     required: false
 
 
@@ -90,16 +93,12 @@ runs:
       docker push "$ECR_REGISTRY/${{ env.LATEST_TAG }}"
 
 # Azure Build and Push
-  - name: Login to Azure
-    uses: azure/login@v2
-    if: ${{ inputs.cloud-registry == 'azure' }}
+  - name: Login to Azure Container Registry
+    uses: docker/login-action@v2
     with:
-      creds: ${{ inputs.AZURE_CREDS }}
-
-  - name: Login to ACR
-    if: ${{ inputs.cloud-registry == 'azure' }}
-    shell: bash
-    run: az acr login --name "${{ inputs.AZURE_REGISTRY_NAME }}"
+      registry: ${{ secrets.ACR_LOGIN_SERVER }}
+      username: ${{ secrets.ACR_USERNAME }}
+      password: ${{ secrets.ACR_PASSWORD }}
 
   - name: Build and tag Docker image (Azure)
     if: ${{ inputs.cloud-registry == 'azure' }}

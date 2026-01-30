@@ -96,7 +96,7 @@ runs:
   - name: Login to Azure Container Registry
     uses: docker/login-action@v2
     with:
-      registry: ${{ secrets.ACR_LOGIN_SERVER }}
+      registry: testing.azurecr.io
       username: ${{ secrets.ACR_USERNAME }}
       password: ${{ secrets.ACR_PASSWORD }}
 
@@ -104,7 +104,7 @@ runs:
     if: ${{ inputs.cloud-registry == 'azure' }}
     shell: bash
     run: |
-      ACR_LOGIN_SERVER="${{ secrets.ACR_LOGIN_SERVER }}"
+      ACR_LOGIN_SERVER=testing.azurecr.io
   
       docker buildx build \
         --platform "${{ inputs.build-platform }}" \

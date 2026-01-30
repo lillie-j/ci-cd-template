@@ -104,7 +104,7 @@ runs:
     if: ${{ inputs.cloud-registry == 'azure' }}
     shell: bash
     run: |
-      ACR_LOGIN_SERVER="${{ inputs.AZURE_REGISTRY_NAME }}.azurecr.io"
+      ACR_LOGIN_SERVER="${{ secrets.ACR_LOGIN_SERVER }}"
   
       docker buildx build \
         --platform "${{ inputs.build-platform }}" \
